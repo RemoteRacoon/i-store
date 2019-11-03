@@ -19,6 +19,9 @@ Route::middleware('auth:api')->group(function () {
     });
     Route::prefix('orders')->group(function () {
 
+        Route::middleware('admin')->group(function() {
+            Route::post('confirm/{order}', 'OrderController@confirm');
+        });
         Route::post('rent/{order}', 'OrderController@rent');
         Route::post('reject/{order}', 'OrderController@reject');
 
