@@ -17,11 +17,16 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    Route::prefix('admin')->group(function () {
+        Route::prefix('users')->group(function () {
+            Route::get('/', 'UserController@index')->middleware('admin');
+            Route::get('{user}', 'UserController@show')->middleware('admin');
+        });
+    });
+
     Route::prefix('orders')->group(function () {
 
-        Route::middleware('admin')->group(function() {
-            Route::post('confirm/{order}', 'OrderController@confirm');
-        });
+        Route::post('confirm/{order}', 'OrderController@confirm')->middleware('admin');
         Route::post('rent/{order}', 'OrderController@rent');
         Route::post('reject/{order}', 'OrderController@reject');
 
