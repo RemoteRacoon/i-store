@@ -16,12 +16,17 @@ class OrderController extends Controller
     private function processOrder(Collection $orders)
     {
         $orders = $orders->toArray();
-        $processed = [];
+        $processed = null;
         foreach ($orders as $order) {
             $order = array_filter($order, function ($k) {
-                return $k === 'id' || $k === 'state' || $k === 'product' || $k === 'rent_date_start' || $k === 'rent_date_expire';
+                return $k === 'id' ||
+                    $k === 'user_id' ||
+                    $k === 'state' ||
+                    $k === 'product' ||
+                    $k === 'rent_date_start' ||
+                    $k === 'rent_date_expire';
             }, ARRAY_FILTER_USE_KEY);
-            array_push($processed, $order);
+            $processed = $orders;
         }
         return $processed;
     }
@@ -41,8 +46,9 @@ class OrderController extends Controller
     }
 
 
-    public function store(User $user, Product $product)
+    public function store(Product $product)
     {
+        $user = auth()->user();
         $order = Order::create([
             'user_id' => $user->id,
             'product_id' => $product->id
@@ -60,8 +66,11 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        $res = $order->with(['state', 'product'])->where('id', $order->id)->get();
-        $res = $this->processOrder($res);
+        $res = $order->with(['state', 'product'])->where('id', $order->id)->first();
+
+        if ($res->user_id !== auth()->user()->id) {
+            abort(403);
+        }
         return response()->json($res, 200);
     }
 
@@ -75,11 +84,19 @@ class OrderController extends Controller
      */
     public function update(Order $order)
     {
-        $res = tap($order->where('id', $order->id)->update([
-            'rent_date_start' => request()->startDate,
-            'rent_date_expire' => request()->expiryDate,
-        ]))->get();
-        $updated  = $this->processOrder($res);
+
+        $ord = Order::where('id', $order->id)
+            ->with(['state', 'product'])->first();
+        if ($ord->user_id !== auth()->user()->id) {
+            abort(403);
+        }
+        $updated = tap(
+            $order->where('id', $order->id)->first(), function ($order) {
+            $order->update([
+                'rent_date_start' => request()->startDate,
+                'rent_date_expire' => request()->expiryDate,
+            ]);
+        })->with(['state', 'product'])->where('id', $order->id)->first();
         return response()->json($updated, 200);
     }
 
@@ -91,26 +108,42 @@ class OrderController extends Controller
      */
     public function destroy(Order $order)
     {
+        $ord = Order::where('id', $order->id)->first();
+        if ($ord->user_id !== auth()->user()->id) {
+            abort(403);
+        }
         $order->where('id', $order->id)->delete();
         return response()->json('Deleted successfully!');
     }
 
-    public function rent(User $user, Order $order)
+    public function rent(Order $order)
     {
-        $res = $order->where('id', $order->id)->update([
-            'state_id' => State::states()['pending']
-        ]);
-        return response()->json($res);
+        $ord = Order::where('id', $order->id)->first();
+        if ($ord->user_id !== auth()->user()->id) {
+            abort(403);
+        }
+        $rented = tap(
+            $order->where('id', $order->id)->first(), function ($order) {
+            $order->update([
+                'state_id' => State::states()['pending']
+            ]);
+        })->with(['state','product'])->where('id', $order->id)->first();
+        return response()->json($rented);
     }
 
-    public function reject(User $user, Order $order)
+    public function reject(Order $order)
     {
-        $res = $order->where('id', $order->id)
-            ->update([
+        $ord = Order::where('id',$order->id)->first();
+        if ($ord->user_id !== auth()->user()->id) {
+            abort(403);
+        }
+        $rejected = tap(
+            $order->where('id', $order->id)->first(), function ($order) {
+            $order->update([
                 'state_id' => State::states()['available']
             ]);
+        })->with(['state','product'])->where('id', $order->id)->first();
 
-//        return response()->json('Updated successfully!');
-        return response()->json($res, 200);
+        return response()->json($rejected, 200);
     }
 }
