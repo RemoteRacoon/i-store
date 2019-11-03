@@ -8,28 +8,13 @@ use App\State;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use App\Traits\OrderProcessable;
 
 
 class OrderController extends Controller
 {
 
-    private function processOrder(Collection $orders)
-    {
-        $orders = $orders->toArray();
-        $processed = null;
-        foreach ($orders as $order) {
-            $order = array_filter($order, function ($k) {
-                return $k === 'id' ||
-                    $k === 'user_id' ||
-                    $k === 'state' ||
-                    $k === 'product' ||
-                    $k === 'rent_date_start' ||
-                    $k === 'rent_date_expire';
-            }, ARRAY_FILTER_USE_KEY);
-            $processed = $orders;
-        }
-        return $processed;
-    }
+    use OrderProcessable;
 
     /**
      * Display a listing of the resource.
@@ -127,13 +112,13 @@ class OrderController extends Controller
             $order->update([
                 'state_id' => State::states()['pending']
             ]);
-        })->with(['state','product'])->where('id', $order->id)->first();
+        })->with(['state', 'product'])->where('id', $order->id)->first();
         return response()->json($rented);
     }
 
     public function reject(Order $order)
     {
-        $ord = Order::where('id',$order->id)->first();
+        $ord = Order::where('id', $order->id)->first();
         if ($ord->user_id !== auth()->user()->id) {
             abort(403);
         }
@@ -142,20 +127,20 @@ class OrderController extends Controller
             $order->update([
                 'state_id' => State::states()['available']
             ]);
-        })->with(['state','product'])->where('id', $order->id)->first();
+        })->with(['state', 'product'])->where('id', $order->id)->first();
 
         return response()->json($rejected, 200);
     }
 
     public function confirm(Order $order)
     {
-        $ord = Order::where('id',$order->id)->first();
+        $ord = Order::where('id', $order->id)->first();
         $confirmed = tap(
             $order->where('id', $order->id)->first(), function ($order) {
             $order->update([
                 'state_id' => State::states()['confirmed']
             ]);
-        })->with(['state','product'])->where('id', $order->id)->first();
+        })->with(['state', 'product'])->where('id', $order->id)->first();
 
         return response()->json($confirmed, 200);
     }
