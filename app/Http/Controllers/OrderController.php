@@ -146,4 +146,18 @@ class OrderController extends Controller
 
         return response()->json($rejected, 200);
     }
+
+    public function confirm(Order $order)
+    {
+        $ord = Order::where('id',$order->id)->first();
+        $confirmed = tap(
+            $order->where('id', $order->id)->first(), function ($order) {
+            $order->update([
+                'state_id' => State::states()['confirmed']
+            ]);
+        })->with(['state','product'])->where('id', $order->id)->first();
+
+        return response()->json($confirmed, 200);
+    }
+
 }
