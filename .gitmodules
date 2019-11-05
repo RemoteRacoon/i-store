@@ -1,0 +1,3 @@
+[submodule "resources/js/i-store-frontend"]
+	path = resources/js/i-store-frontend
+	url = https://github.com/RemoteRacoon/i-store-frontend
