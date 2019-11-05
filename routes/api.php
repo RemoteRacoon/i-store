@@ -17,29 +17,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-    Route::prefix('admin')->group(function () {
-        Route::prefix('users')->group(function () {
-            Route::get('/', 'UserController@index')->middleware('admin');
-            Route::get('{user}', 'UserController@show')->middleware('admin');
-        });
-    });
-
-    Route::prefix('orders')->group(function () {
-
-        Route::post('confirm/{order}', 'OrderController@confirm')->middleware('admin');
-        Route::post('rent/{order}', 'OrderController@rent');
-        Route::post('reject/{order}', 'OrderController@reject');
-
-        Route::get('/', 'OrderController@index');
-        Route::get('{order}', 'OrderController@show');
-        Route::post('{product}', 'OrderController@store');
-        Route::put('{order}', 'OrderController@update');
-        Route::delete('{order}', 'OrderController@destroy');
-
-    });
 });
 
-
-Route::post('login', 'AuthController@login');
 
 
