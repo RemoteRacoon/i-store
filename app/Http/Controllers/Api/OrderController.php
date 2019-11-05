@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use App\Order;
 use App\Product;
 use App\State;
+use App\Http\Controllers\Controller;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -24,6 +25,7 @@ class OrderController extends Controller
     public function index()
     {
         $user = auth()->user();
+        dd($user);
         $res = Order::where('user_id', $user->id)
             ->with(['state', 'product'])->get();
         $res = $this->processOrder($res);

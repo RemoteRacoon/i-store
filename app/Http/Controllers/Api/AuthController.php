@@ -1,8 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\LoginRequest;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\RegisterRequest;
+use App\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use Illuminate\Http\Request;
@@ -27,13 +30,13 @@ class AuthController extends Controller
             $token = $body->access_token;
             $expires_in = $body->expires_in;
             $refresh_token = $body->refresh_token;
-            $user = json_decode($http->get(config('services.passport.user_endpoint'),[
+            $user = json_decode($http->get(config('services.passport.user_endpoint'), [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $token
                 ]
             ])->getBody()->getContents());
 
-            return response()->json(compact('user','token', 'refresh_token', 'expires_in'));
+            return response()->json(compact('user', 'token', 'refresh_token', 'expires_in'));
 
         } catch (BadResponseException $e) {
             if ($e->getCode() === 400) {
@@ -46,7 +49,8 @@ class AuthController extends Controller
 
     }
 
-    public function refreshToken(Request $request) {
+    public function refreshToken(Request $request)
+    {
         $http = new Client;
         $response = $http->post(config('services.passport.login_endpoint'), [
             'form_params' => [
@@ -72,10 +76,24 @@ class AuthController extends Controller
         );
     }
 
-    public function logout() {
-        auth()->user()->tokens->each(function($token, $key){
+    public function logout()
+    {
+        auth()->user()->tokens->each(function ($token, $key) {
             $token->delete();
         });
         return response()->json('Logged out successfully', 200);
+    }
+
+    public function register(RegisterRequest $request)
+    {
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+        ]);
+
+        if ($user) {
+            return response()->json('success', 200);
+        }
     }
 }
