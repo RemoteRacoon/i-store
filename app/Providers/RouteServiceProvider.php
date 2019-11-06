@@ -43,6 +43,8 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapOrderRoutes();
 
+        $this->mapProductRoutes();
+
         $this->mapAdminRoutes();
 
         $this->mapAuthRoutes();
@@ -84,6 +86,13 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware(['api','auth:api'])
             ->namespace($this->api_namespace)
             ->group(base_path('routes/orders.php'));
+    }
+
+
+    private function mapProductRoutes() {
+        Route::prefix('api/products')
+            ->namespace($this->api_namespace)
+            ->group(base_path('routes/products.php'));
     }
 
     private function mapAdminRoutes()
