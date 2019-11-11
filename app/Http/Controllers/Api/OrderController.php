@@ -25,7 +25,6 @@ class OrderController extends Controller
     public function index()
     {
         $user = auth()->user();
-        dd($user);
         $res = Order::where('user_id', $user->id)
             ->with(['state', 'product'])->get();
         $res = $this->processOrder($res);
@@ -78,7 +77,7 @@ class OrderController extends Controller
             abort(403);
         }
         $updated = tap(
-            $order->where('id', $order->id)->first(), function ($order) {
+            $ord, function ($order) {
             $order->update([
                 'rent_date_start' => request()->startDate,
                 'rent_date_expire' => request()->expiryDate,
@@ -110,7 +109,7 @@ class OrderController extends Controller
             abort(403);
         }
         $rented = tap(
-            $order->where('id', $order->id)->first(), function ($order) {
+            $ord, function ($order) {
             $order->update([
                 'state_id' => State::states()['pending']
             ]);
@@ -125,7 +124,7 @@ class OrderController extends Controller
             abort(403);
         }
         $rejected = tap(
-            $order->where('id', $order->id)->first(), function ($order) {
+            $ord, function ($order) {
             $order->update([
                 'state_id' => State::states()['available']
             ]);
@@ -138,7 +137,7 @@ class OrderController extends Controller
     {
         $ord = Order::where('id', $order->id)->first();
         $confirmed = tap(
-            $order->where('id', $order->id)->first(), function ($order) {
+            $ord , function ($order) {
             $order->update([
                 'state_id' => State::states()['confirmed']
             ]);
