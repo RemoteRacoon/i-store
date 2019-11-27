@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Facades\OrderService;
 use App\Order;
 use App\Product;
 use App\State;
 use App\Http\Controllers\Controller;
+use App\Traits\OrderProcessable;
 use App\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use App\Traits\OrderProcessable;
 
 
 class OrderController extends Controller
@@ -17,133 +17,80 @@ class OrderController extends Controller
 
     use OrderProcessable;
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
     public function index()
     {
         $user = auth()->user();
-        $res = Order::where('user_id', $user->id)
-            ->with(['state', 'product'])->get();
+        $res = $user->orders;
         $res = $this->processOrder($res);
         return response()->json($res, 200);
     }
 
 
-    public function store(Product $product)
+    public function store($product_id)
     {
         $user = auth()->user();
         $order = Order::create([
             'user_id' => $user->id,
-            'product_id' => $product->id
+            'product_id' => $product_id
         ]);
         $res = $order->save();
         return response()->json($res);
     }
 
 
-    /**
-     * Display the specified resource.
-     *
-     * @param \App\Order $order
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Order $order)
-    {
-        $res = $order->with(['state', 'product'])->where('id', $order->id)->first();
-
-        if ($res->user_id !== auth()->user()->id) {
-            abort(403);
-        }
-        return response()->json($res, 200);
-    }
-
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param \App\Order $order
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Order $order)
+    public function update($order_id, Request $request)
     {
 
-        $ord = Order::where('id', $order->id)
-            ->with(['state', 'product'])->first();
-        if ($ord->user_id !== auth()->user()->id) {
-            abort(403);
-        }
+        $user = auth()->user();
+        $ord = $user->orders()->where('id', $order_id)->first();
+
         $updated = tap(
             $ord, function ($order) {
             $order->update([
                 'rent_date_start' => request()->startDate,
                 'rent_date_expire' => request()->expiryDate,
             ]);
-        })->with(['state', 'product'])->where('id', $order->id)->first();
+        });
         return response()->json($updated, 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param \App\Order $order
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Order $order)
+    public function destroy($order_id)
     {
-        $ord = Order::where('id', $order->id)->first();
-        if ($ord->user_id !== auth()->user()->id) {
-            abort(403);
-        }
-        $order->where('id', $order->id)->delete();
+        $user = auth()->user();
+        $ord = $user->orders()->where('id', $order_id)->first();
+        $ord->delete();
         return response()->json('Deleted successfully!');
     }
 
-    public function rent(Order $order)
+    public function rent($order_id)
     {
-        $ord = Order::where('id', $order->id)->first();
-        if ($ord->user_id !== auth()->user()->id) {
-            abort(403);
-        }
-        $rented = tap(
-            $ord, function ($order) {
-            $order->update([
+        $user = auth()->user();
+        $updated = tap($user->orders()->where('id', $order_id))
+            ->update([
                 'state_id' => State::states()['pending']
-            ]);
-        })->with(['state', 'product'])->where('id', $order->id)->first();
-        return response()->json($rented);
+            ])->first();
+
+        return response()->json($updated);
     }
 
-    public function reject(Order $order)
+    public function reject($order_id)
     {
-        $ord = Order::where('id', $order->id)->first();
-        if ($ord->user_id !== auth()->user()->id) {
-            abort(403);
-        }
-        $rejected = tap(
-            $ord, function ($order) {
-            $order->update([
+        $user = auth()->user();
+        $updated = tap($user->orders()->where('id', $order_id))
+            ->update([
                 'state_id' => State::states()['available']
-            ]);
-        })->with(['state', 'product'])->where('id', $order->id)->first();
-
-        return response()->json($rejected, 200);
+            ])->first();
+        return response()->json($updated, 200);
     }
 
-    public function confirm(Order $order)
+    public function confirm($order_id)
     {
-        $ord = Order::where('id', $order->id)->first();
-        $confirmed = tap(
-            $ord , function ($order) {
-            $order->update([
-                'state_id' => State::states()['confirmed']
-            ]);
-        })->with(['state', 'product'])->where('id', $order->id)->first();
-
-        return response()->json($confirmed, 200);
+        $user = Order::where('id', $order_id)->first()->user;
+        $confirmed = tap($user->orders()->where('id', $order_id))->update([
+            'state_id' => State::states()['confirmed']
+        ])->first();
+        return OrderService::confirm($confirmed, $user);
     }
 
 }
