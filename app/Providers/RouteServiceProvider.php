@@ -25,8 +25,16 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        Route::bind('user', function ($user_id) {
+            return \App\User::where('id', $user_id)->first() ?? abort(404);
+        });
+        Route::bind('order', function ($order_id) {
+            return \App\Order::where('id', $order_id)->first() ?? abort(404);
+        });
 
+        Route::bind('product', function ($product_id) {
+            return \App\Product::where('id', $product_id)->first() ?? abort(404);
+        });
         parent::boot();
     }
 
@@ -83,13 +91,14 @@ class RouteServiceProvider extends ServiceProvider
     private function mapOrderRoutes()
     {
         Route::prefix('api/orders')
-            ->middleware(['api','auth:api'])
+            ->middleware(['auth:api'])
             ->namespace($this->api_namespace)
             ->group(base_path('routes/orders.php'));
     }
 
 
-    private function mapProductRoutes() {
+    private function mapProductRoutes()
+    {
         Route::prefix('api/products')
             ->namespace($this->api_namespace)
             ->group(base_path('routes/products.php'));
@@ -98,10 +107,11 @@ class RouteServiceProvider extends ServiceProvider
     private function mapAdminRoutes()
     {
         Route::prefix('api/admin/users')
-            ->middleware(['api','auth:api','admin'])
+            ->middleware(['api', 'auth:api', 'admin'])
             ->namespace($this->api_namespace)
             ->group(base_path('routes/admin.php'));
     }
+
 
     private function mapAuthRoutes()
     {
