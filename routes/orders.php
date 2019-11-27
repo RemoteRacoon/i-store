@@ -1,12 +1,13 @@
 <?php
 
-Route::post('confirm/{order}', 'OrderController@confirm')->middleware('admin');
-Route::post('rent/{order}', 'OrderController@rent');
-Route::post('reject/{order}', 'OrderController@reject');
+Route::post('confirm/{id}', 'OrderController@confirm')->middleware('admin');
+Route::post('rent/{id}', 'OrderController@rent');
+Route::post('reject/{id}', 'OrderController@reject');
 
 Route::get('/', 'OrderController@index');
-Route::get('{order}', 'OrderController@show');
-Route::post('{product}', 'OrderController@store');
-Route::put('{order}', 'OrderController@update');
-Route::delete('{order}', 'OrderController@destroy');
+
+Route::put('{id}', 'OrderController@update');
+Route::post('{id}', 'OrderController@store');
+Route::delete('{id}', 'OrderController@destroy');
+
 
